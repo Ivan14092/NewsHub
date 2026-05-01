@@ -1,0 +1,44 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ article.title }} — NewsHub{% endblock %}
+
+{% block body %}
+    <div class="row">
+        <div class="col-md-8">
+            <span class="badge bg-secondary mb-2">
+                <a href="{{ path('app_category_show', {slug: article.category.slug}) }}"
+                   class="text-white text-decoration-none">
+                    {{ article.category.name }}
+                </a>
+            </span>
+
+            <h1 class="mb-3">{{ article.title }}</h1>
+
+            <p class="text-muted mb-4">
+                Автор: {{ article.author.username }} ·
+                {{ article.createdAt|date("d.m.Y H:i") }}
+                {% if article.updatedAt %}
+                    · Оновлено: {{ article.updatedAt|date("d.m.Y H:i") }}
+                {% endif %}
+            </p>
+
+            <div class="article-content">
+                {{ article.content|nl2br }}
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <h5>Категорії</h5>
+            <ul class="list-group">
+                {% for category in categories %}
+                    <li class="list-group-item">
+                        <a href="{{ path('app_category_show', {slug: category.slug}) }}"
+                           class="text-decoration-none">
+                            {{ category.name }}
+                        </a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+{% endblock %}

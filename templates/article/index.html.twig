@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Всі статті — NewsHub{% endblock %}
+
+{% block body %}
+    <h1 class="mb-4">Всі статті</h1>
+
+    {% for article in articles %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <span class="badge bg-secondary mb-1">
+                    {{ article.category.name }}
+                </span>
+                <h5 class="card-title">
+                    <a href="{{ path('app_article_show', {slug: article.slug}) }}"
+                       class="text-decoration-none text-dark">
+                        {{ article.title }}
+                    </a>
+                </h5>
+                <p class="card-text text-muted">
+                    {{ article.content|slice(0, 200) }}...
+                </p>
+                <small class="text-muted">
+                    {{ article.author.username }} · {{ article.createdAt|date("d.m.Y") }}
+                </small>
+            </div>
+        </div>
+    {% else %}
+        <p class="text-muted">Статей поки немає.</p>
+    {% endfor %}
+{% endblock %}
