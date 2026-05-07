@@ -4,8 +4,9 @@ namespace App\Controller;
 
 use App\Entity\Article;
 use App\Repository\ArticleRepository;
-use App\Repository\CategoryRepository;
+use Knp\Component\Pager\PaginatorInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
@@ -14,17 +15,33 @@ class ArticleController extends AbstractController
 {
     public function __construct(
         private readonly ArticleRepository  $articleRepository,
-        private readonly CategoryRepository $categoryRepository,
+        private readonly PaginatorInterface $paginator,
     )
     {
     }
 
     #[Route('', name: 'app_article_index')]
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $search = $request->query->get('q', '');
+
+        if ($search) {
+            $query = $this->articleRepository->findBySearch($search);
+        } else {
+            $query = $this->articleRepository->createQueryBuilder('a')
+                ->orderBy('a.createdAt', 'DESC')
+                ->getQuery();
+        }
+
+        $pagination = $this->paginator->paginate(
+            $query,
+            $request->query->getInt('page', 1),
+            10
+        );
+
         return $this->render('article/index.html.twig', [
-            'articles' => $this->articleRepository->findLatest(20),
-            'categories' => $this->categoryRepository->findAllOrdered(),
+            'pagination' => $pagination,
+            'search' => $search,
         ]);
     }
 
@@ -33,7 +50,6 @@ class ArticleController extends AbstractController
     {
         return $this->render('article/show.html.twig', [
             'article' => $article,
-            'categories' => $this->categoryRepository->findAllOrdered(),
         ]);
     }
 }
