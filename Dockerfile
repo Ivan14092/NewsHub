@@ -1,40 +1,40 @@
 FROM php:8.4-fpm
 
-# Встановлення залежностей
+# Встановлення системних залежностей
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
     nginx \
     libicu-dev \
     && docker-php-ext-install pdo pdo_mysql intl \
-    && apt-get clean
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Встановлення Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Копіюємо composer файли спочатку (кешування шарів)
+# Копіюємо тільки файли залежностей для кешування шарів
 COPY composer.json composer.lock ./
 
-# Встановлення залежностей без dev
-RUN composer install --no-dev --optimize-autoloader --no-scripts
+# Встановлюємо залежності без скриптів (вони запустяться пізніше)
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Копіюємо решту файлів
+# Копіюємо весь проект (використовуючи .dockerignore)
 COPY . .
 
-# Генеруємо autoload після копіювання всього коду
-RUN composer dump-autoload --optimize
-
-# Nginx конфіг
-COPY docker/nginx/default.conf /etc/nginx/sites-available/default
-RUN sed -i 's/fastcgi_pass php:9000/fastcgi_pass 127.0.0.1:9000/' /etc/nginx/sites-available/default
-RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
-RUN rm -f /etc/nginx/conf.d/default.conf
-
-# Права на папки
+# Створюємо папки та права доступу (краще робити до dump-autoload)
 RUN mkdir -p var/cache var/log \
     && chown -R www-data:www-data var
+
+# Тепер генеруємо фінальний автозавантажувач
+RUN composer dump-autoload --optimize --no-dev
+
+# Конфігурація Nginx
+COPY docker/nginx/default.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
+    && rm -f /etc/nginx/conf.d/default.conf
 
 # Скрипт запуску
 COPY docker/start.sh /start.sh
