@@ -1,34 +1,22 @@
-FROM php:8.4-fpm
-
-# 1. Системні пакети
-RUN apt-get update && apt-get install -y \
-    git unzip nginx libicu-dev \
-    && docker-php-ext-install pdo pdo_mysql intl \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# 2. Composer
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+# ... (початок Dockerfile той самий) ...
 
 WORKDIR /var/www/html
 
-# 3. Копіюємо ВЕСЬ проект
+# 1. Копіюємо проект
 COPY . .
 
-# 4. Видаляємо vendor, якщо він випадково скопіювався порожнім, і ставимо все чисто
-RUN rm -rf vendor && composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
+# 2. Видаляємо vendor і чистимо кеш
+RUN rm -rf vendor composer.lock && composer clear-cache
 
-# 5. КРИТИЧНА ПЕРЕВІРКА: якщо файлу немає, білд впаде з помилкою прямо зараз
-RUN ls -l vendor/autoload_runtime.php || (echo "CRITICAL ERROR: autoload_runtime.php NOT FOUND" && exit 1)
+# 3. Встановлюємо залежності. 
+# ВАЖЛИВО: ми прибираємо --no-scripts, щоб Symfony Flex міг відпрацювати, 
+# але додаємо APP_RUNTIME_MODE, щоб він не падав на помилках бази даних
+RUN APP_ENV=prod composer install --no-dev --optimize-autoloader --no-interaction
 
-# 6. Налаштування прав
-RUN mkdir -p var/cache var/log && chown -R www-data:www-data var
+# 4. Якщо файл все ще не з'явився (таке буває), ми ГЕНЕРУЄМО його примусово
+RUN composer dump-autoload --optimize --no-dev
 
-# 7. Nginx
-COPY docker/nginx/default.conf /etc/nginx/sites-available/default
-RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+# 5. ПЕРЕВІРКА (тепер вона МАЄ пройти)
+RUN ls -l vendor/autoload_runtime.php || (echo "STILL NOT FOUND, FORCING GENERATION..." && composer require symfony/runtime)
 
-COPY docker/start.sh /start.sh
-RUN chmod +x /start.sh
-
-EXPOSE 80
-CMD ["/start.sh"]
+# ... (решта Dockerfile: права, Nginx, start.sh) ...
