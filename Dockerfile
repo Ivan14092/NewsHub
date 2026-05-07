@@ -1,22 +1,48 @@
-# ... (початок Dockerfile той самий) ...
+# 1. Використовуємо стабільний образ PHP
+FROM php:8.4-fpm
 
+# 2. Встановлюємо системні залежності
+RUN apt-get update && apt-get install -y \
+    git \
+    unzip \
+    nginx \
+    libicu-dev \
+    && docker-php-ext-install pdo pdo_mysql intl \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# 3. Встановлюємо Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# 4. Робоча директорія
 WORKDIR /var/www/html
 
-# 1. Копіюємо проект
+# 5. Копіюємо ВЕСЬ проект (переконайтеся, що в .dockerignore НЕМАЄ vendor/)
 COPY . .
 
-# 2. Видаляємо vendor і чистимо кеш
-RUN rm -rf vendor composer.lock && composer clear-cache
+# 6. Встановлюємо залежності
+# Ми прибираємо --no-scripts, щоб Symfony Flex міг згенерувати autoload_runtime.php
+# Додаємо --no-audit, щоб вразливості не блокували білд
+RUN composer install --no-dev --optimize-autoloader --no-interaction --audit=false
 
-# 3. Встановлюємо залежності. 
-# ВАЖЛИВО: ми прибираємо --no-scripts, щоб Symfony Flex міг відпрацювати, 
-# але додаємо APP_RUNTIME_MODE, щоб він не падав на помилках бази даних
-RUN APP_ENV=prod composer install --no-dev --optimize-autoloader --no-interaction
-
-# 4. Якщо файл все ще не з'явився (таке буває), ми ГЕНЕРУЄМО його примусово
+# 7. ГАРАНТІЯ: Якщо файл не створився, ми примусово перестворюємо його
 RUN composer dump-autoload --optimize --no-dev
 
-# 5. ПЕРЕВІРКА (тепер вона МАЄ пройти)
-RUN ls -l vendor/autoload_runtime.php || (echo "STILL NOT FOUND, FORCING GENERATION..." && composer require symfony/runtime)
+# 8. ПЕРЕВІРКА: зупиняємо білд, якщо файлу все ще немає (для діагностики)
+RUN ls -l vendor/autoload_runtime.php || (echo "FATAL: autoload_runtime.php is still missing" && exit 1)
 
-# ... (решта Dockerfile: права, Nginx, start.sh) ...
+# 9. Права доступу та лог-файли
+RUN mkdir -p var/cache var/log && chown -R www-data:www-data var
+
+# 10. Налаштування Nginx
+COPY docker/nginx/default.conf /etc/nginx/sites-available/default
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
+    && rm -f /etc/nginx/conf.d/default.conf
+
+# 11. Скрипт запуску
+COPY docker/start.sh /start.sh
+RUN chmod +x /start.sh
+
+EXPOSE 80
+
+CMD ["/start.sh"]
