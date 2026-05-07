@@ -44,7 +44,7 @@ class AppFixtures extends Fixture
         $manager->persist($admin);
 
         $authors = [$admin];
-        foreach (['ivan', 'Denis', 'mykola', 'Nadya'] as $username) {
+        foreach (['Ivan', 'Denis', 'Mykola', 'Nadya'] as $username) {
             $user = new User();
             $user->setEmail($username . '@newshub.com');
             $user->setUsername($username);
