@@ -1,6 +1,6 @@
 FROM php:8.4-fpm
 
-# Встановлення системних залежностей
+# Системні залежності
 RUN apt-get update && apt-get install -y \
     git \
     unzip \
@@ -10,33 +10,28 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Встановлення Composer
+# Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# Копіюємо тільки файли залежностей для кешування шарів
-COPY composer.json composer.lock ./
-
-# Встановлюємо залежності без скриптів (вони запустяться пізніше)
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
-
-# Копіюємо весь проект (використовуючи .dockerignore)
+# 1. Копіюємо ВЕСЬ код
 COPY . .
 
-# Створюємо папки та права доступу (краще робити до dump-autoload)
+# 2. Очищуємо та встановлюємо залежності ПРЯМО ТУТ
+# Це створить правильний vendor/autoload_runtime.php
+RUN rm -rf vendor && composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
+
+# 3. Права доступу
 RUN mkdir -p var/cache var/log \
     && chown -R www-data:www-data var
 
-# Тепер генеруємо фінальний автозавантажувач
-RUN composer dump-autoload --optimize --no-dev
-
-# Конфігурація Nginx
+# 4. Налаштування Nginx (вже з правкою localhost)
 COPY docker/nginx/default.conf /etc/nginx/sites-available/default
 RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
     && rm -f /etc/nginx/conf.d/default.conf
 
-# Скрипт запуску
+# 5. Скрипт запуску
 COPY docker/start.sh /start.sh
 RUN chmod +x /start.sh
 
