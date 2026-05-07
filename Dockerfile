@@ -11,21 +11,19 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-# КРИТИЧНИЙ МОМЕНТ:
-# Спочатку копіюємо ТІЛЬКИ файли залежностей
-COPY composer.json composer.lock ./
-
-# Встановлюємо їх ПЕРЕД копіюванням коду проекту
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
-
-# ТІЛЬКИ ТЕПЕР копіюємо решту проекту
+# 3. Копіюємо ВЕСЬ проект
 COPY . .
 
-# Примусово оновлюємо автозавантажувач, щоб він побачив App\Kernel тощо
-RUN composer dump-autoload --optimize --no-dev
+# 4. Видаляємо vendor, якщо він випадково скопіювався порожнім, і ставимо все чисто
+RUN rm -rf vendor && composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
 
-# Права та Nginx
+# 5. КРИТИЧНА ПЕРЕВІРКА: якщо файлу немає, білд впаде з помилкою прямо зараз
+RUN ls -l vendor/autoload_runtime.php || (echo "CRITICAL ERROR: autoload_runtime.php NOT FOUND" && exit 1)
+
+# 6. Налаштування прав
 RUN mkdir -p var/cache var/log && chown -R www-data:www-data var
+
+# 7. Nginx
 COPY docker/nginx/default.conf /etc/nginx/sites-available/default
 RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
 
