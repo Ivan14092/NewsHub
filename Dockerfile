@@ -15,12 +15,9 @@ WORKDIR /var/www/html
 
 COPY . .
 
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
 RUN composer install --no-dev --optimize-autoloader
-
-RUN composer dump-autoload --classmap-authoritative --no-dev
-
-
-RUN ls -l vendor/autoload_runtime.php || (echo "FATAL: autoload_runtime.php missing" && exit 1)
 
 RUN mkdir -p var/cache var/log && chown -R www-data:www-data var
 
