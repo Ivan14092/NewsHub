@@ -13,16 +13,19 @@ class ArticleService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly SluggerInterface $slugger,
-        private readonly ArticleRepository $articleRepository,
-    ) {}
+        private readonly SluggerInterface       $slugger,
+        private readonly ArticleRepository      $articleRepository,
+    )
+    {
+    }
 
     public function create(
-        string $title,
-        string $content,
+        string   $title,
+        string   $content,
         Category $category,
-        User $author,
-    ): Article {
+        User     $author,
+    ): Article
+    {
         $article = new Article();
         $article->setTitle($title);
         $article->setContent($content);

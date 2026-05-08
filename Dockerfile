@@ -21,7 +21,7 @@ RUN composer install --no-dev --optimize-autoloader
 
 RUN mkdir -p var/cache var/log && chown -R www-data:www-data var
 
-COPY docker/nginx/default.conf /etc/nginx/sites-available/default
+COPY docker/nginx/railway.conf /etc/nginx/sites-available/default
 RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default \
     && rm -f /etc/nginx/conf.d/default.conf
 

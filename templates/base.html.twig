@@ -9,6 +9,10 @@
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="d-flex align-items-center gap-2 me-2">
+        <span class="badge bg-secondary">$ {{ usd_rate|number_format(2) }} ₴</span>
+        <span class="badge bg-warning text-dark">₿ {{ btc_price|number_format(0, '.', ',') }}$</span>
+    </div>
     <div class="container">
         <a class="navbar-brand" href="{{ path('app_home') }}">NewsHub</a>
         <div class="navbar-nav ms-auto d-flex flex-row align-items-center gap-3">
