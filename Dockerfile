@@ -15,9 +15,10 @@ WORKDIR /var/www/html
 
 COPY . .
 
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+RUN composer install --no-dev --optimize-autoloader
 
 RUN composer dump-autoload --classmap-authoritative --no-dev
+
 
 RUN ls -l vendor/autoload_runtime.php || (echo "FATAL: autoload_runtime.php missing" && exit 1)
 
