@@ -23,7 +23,7 @@ COPY . .
 # 6. Встановлюємо залежності
 # Ми прибираємо --no-scripts, щоб Symfony Flex міг згенерувати autoload_runtime.php
 # Додаємо --no-audit, щоб вразливості не блокували білд
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-audit
+RUN composer install --no-dev --optimize-autoloader --no-interaction \
 # 7. ГАРАНТІЯ: Якщо файл не створився, ми примусово перестворюємо його
 RUN composer dump-autoload --optimize --no-dev
 
