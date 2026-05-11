@@ -3,7 +3,6 @@
 namespace App\Service;
 
 use Symfony\Contracts\Cache\CacheInterface;
-use Symfony\Contracts\Cache\ItemInterface;
 
 class CurrencyService
 {
@@ -16,10 +15,8 @@ class CurrencyService
     public function getUsdRate(): float
     {
         try {
-            return $this->cache->get('usd_rate', function (ItemInterface $item) {
-                $item->expiresAfter(3600);
-                return 0.0;
-            });
+            $value = $this->cache->getItem('usd_rate');
+            return $value->isHit() ? (float)$value->get() : 0.0;
         } catch (\Throwable) {
             return 0.0;
         }
@@ -28,10 +25,8 @@ class CurrencyService
     public function getBtcPrice(): float
     {
         try {
-            return $this->cache->get('btc_price', function (ItemInterface $item) {
-                $item->expiresAfter(300);
-                return 0.0;
-            });
+            $value = $this->cache->getItem('btc_price');
+            return $value->isHit() ? (float)$value->get() : 0.0;
         } catch (\Throwable) {
             return 0.0;
         }
