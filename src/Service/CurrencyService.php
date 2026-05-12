@@ -2,31 +2,32 @@
 
 namespace App\Service;
 
-use Psr\Cache\CacheItemPoolInterface;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 
 class CurrencyService
 {
     public function __construct(
-        private readonly CacheItemPoolInterface $cache,
+        private readonly CacheInterface $cache,
     ) {}
 
     public function getUsdRate(): ?float
     {
-        try {
-            $item = $this->cache->getItem('usd_rate');
-            return $item->isHit() ? (float) $item->get() : null;
-        } catch (\Throwable) {
+        $value = $this->cache->get('usd_rate', function (ItemInterface $item) {
+            $item->expiresAfter(3600);
             return null;
-        }
+        });
+
+        return $value !== null ? (float) $value : null;
     }
 
     public function getBtcPrice(): ?float
     {
-        try {
-            $item = $this->cache->getItem('btc_price');
-            return $item->isHit() ? (float) $item->get() : null;
-        } catch (\Throwable) {
+        $value = $this->cache->get('btc_price', function (ItemInterface $item) {
+            $item->expiresAfter(300);
             return null;
-        }
+        });
+
+        return $value !== null ? (float) $value : null;
     }
 }
