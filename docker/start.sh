@@ -25,6 +25,15 @@ echo "Starting Worker in background..."
     done
 ) &
 
+echo "Starting price updater..."
+(
+    while true; do
+        sleep 300
+        php bin/console app:update-prices BTC --env=prod || true
+        php bin/console app:update-prices USD --env=prod || true
+    done
+) &
+
 echo "Starting PHP-FPM..."
 php-fpm -D
 
