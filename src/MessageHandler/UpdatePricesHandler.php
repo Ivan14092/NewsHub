@@ -31,7 +31,7 @@ final class UpdatePricesHandler
     {
         try {
             $response = $this->httpClient->request('GET',
-                'https://api.privatbank.ua/p24api/pubinfo?exchange&coursid=5'
+                'https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD'
             );
 
             foreach ($response->toArray() as $currency) {
