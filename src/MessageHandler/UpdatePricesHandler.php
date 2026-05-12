@@ -14,13 +14,15 @@ final class UpdatePricesHandler
 {
     public function __construct(
         private readonly HttpClientInterface $httpClient,
-        private readonly CacheInterface $cache,
-        private readonly LoggerInterface $logger,
-    ) {}
+        private readonly CacheInterface      $cache,
+        private readonly LoggerInterface     $logger,
+    )
+    {
+    }
 
     public function __invoke(UpdatePricesMessage $message): void
     {
-        match($message->symbol) {
+        match ($message->symbol) {
             'BTC' => $this->updateBtcPrice(),
             'USD' => $this->updateUsdRate(),
             default => $this->logger->warning('Unknown symbol', ['symbol' => $message->symbol]),
@@ -31,12 +33,12 @@ final class UpdatePricesHandler
     {
         try {
             $response = $this->httpClient->request('GET',
-                'https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD'
+                'https://api.privatbank.ua/p24api/pubinfo?exchange&coursid=5'
             );
 
             foreach ($response->toArray() as $currency) {
                 if ($currency['ccy'] === 'USD') {
-                    $rate = (float) $currency['sale'];
+                    $rate = (float)$currency['sale'];
                     $this->saveToCache('usd_rate', $rate, 3600);
                     $this->logger->info('USD rate updated', ['rate' => $rate]);
                     return;
@@ -51,22 +53,33 @@ final class UpdatePricesHandler
     {
         try {
             $response = $this->httpClient->request('GET',
-                'https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT',
+                'https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=USD',
                 ['timeout' => 5]
             );
 
-            $price = (float) ($response->toArray()['price'] ?? 0.0);
+            $data = $response->toArray();
+            $this->logger->info('BTC API response', ['data' => json_encode($data)]);
+
+            $price = (float)($data['USD'] ?? 0.0);
             $this->saveToCache('btc_price', $price, 300);
             $this->logger->info('BTC price updated', ['price' => $price]);
 
         } catch (\Throwable $e) {
-            $this->logger->error('Failed to update BTC', ['error' => $e->getMessage()]);
+            $this->logger->error('Failed to update BTC', [
+                'error' => $e->getMessage(),
+                'class' => get_class($e),
+            ]);
         }
     }
 
-    private function saveToCache(string $key, float $value, int $ttl): void
+    private function saveToCache(string $key, ?float $value, int $ttl): void
     {
         $this->cache->delete($key);
+
+        if ($value === null) {
+            return; // не зберігаємо null
+        }
+
         $this->cache->get($key, function (ItemInterface $item) use ($value, $ttl) {
             $item->expiresAfter($ttl);
             return $value;
