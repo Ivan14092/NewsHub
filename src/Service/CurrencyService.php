@@ -9,7 +9,9 @@ class CurrencyService
 {
     public function __construct(
         private readonly CacheInterface $cache,
-    ) {}
+    )
+    {
+    }
 
     public function getUsdRate(): ?float
     {
@@ -18,7 +20,7 @@ class CurrencyService
             return null;
         });
 
-        return $value !== null ? (float) $value : null;
+        return $value !== null ? (float)$value : null;
     }
 
     public function getBtcPrice(): ?float
@@ -28,6 +30,6 @@ class CurrencyService
             return null;
         });
 
-        return $value !== null ? (float) $value : null;
+        return $value !== null ? (float)$value : null;
     }
 }

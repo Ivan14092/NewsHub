@@ -58,8 +58,6 @@ final class UpdatePricesHandler
             );
 
             $data = $response->toArray();
-            $this->logger->info('BTC API response', ['data' => json_encode($data)]);
-
             $price = (float)($data['USD'] ?? 0.0);
             $this->saveToCache('btc_price', $price, 300);
             $this->logger->info('BTC price updated', ['price' => $price]);
