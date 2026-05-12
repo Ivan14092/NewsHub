@@ -7,6 +7,10 @@ php bin/console doctrine:migrations:migrate --no-interaction --env=prod
 echo "Setting up messenger transports..."
 php bin/console messenger:setup-transports --env=prod
 
+echo "Initial price update..."
+php bin/console app:update-prices BTC --env=prod || true
+php bin/console app:update-prices USD --env=prod || true
+
 echo "Fixing permissions..."
 mkdir -p var/cache/prod/easyadmin
 chown -R www-data:www-data var/
